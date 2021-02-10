@@ -78,4 +78,17 @@ export default {
 .links {
   padding-top: 15px;
 }
+
+@media screen and (max-width: 1024px){
+   /* Стили для экранов с размером до 1024px */
+}
+
+@media screen and (min-width: 1024px){
+   /* Стили для экранов с размером от 1024px */
+}
+
+@media screen and (min-width: 768px) and (max-width: 1024px) {
+   /* Стили для экранов с размером от 768px и до 1024px */
+}
+
 </style>
