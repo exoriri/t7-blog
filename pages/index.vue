@@ -1,27 +1,7 @@
 <template>
   <div class="container">
     <div>
-      <Logo />
-      <h1 class="title">t7-blog</h1>
-      <div class="links">
-        <a
-          href="https://nuxtjs.org/"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="button--green"
-        >
-          Documentation
-        </a>
-        <a
-          href="https://github.com/nuxt/nuxt.js"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="button--grey"
-        >
-          GitHub
-        </a>
-      </div>
-      {{covidCSV}}
+      <Map />
     </div>
   </div>
 </template>
@@ -29,14 +9,18 @@
 <script lang="ts">
 import Vue from "vue";
 
-import { getData } from '../api/requests';
-import { parseCSV } from '../core/utils';
+import { getData } from "../api/requests";
+import { parseCSV } from "../core/utils";
+
+import "leaflet/dist/leaflet.css";
+
+import L from "leaflet";
 
 export default {
-  data: function() {
+  data: function () {
     return {
-      covidCSV: []
-    }
+      covidCSV: "",
+    };
   },
   head() {
     return {
@@ -46,13 +30,14 @@ export default {
     };
   },
   async mounted() {
-    const res = await getData(`https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_daily_reports_us/02-04-2021.csv`);
-    this.covidCSV = parseCSV(res);
-  }
+    const res = await getData(
+      `https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_daily_reports/02-25-2021.csv`
+    );
+  },
 };
 </script>
 
-<style>
+<style scoped>
 .container {
   margin: 0 auto;
   min-height: 100vh;
@@ -70,18 +55,6 @@ export default {
   font-size: 100px;
   color: #35495e;
   letter-spacing: 1px;
-}
-
-.subtitle {
-  font-weight: 300;
-  font-size: 42px;
-  color: #526488;
-  word-spacing: 5px;
-  padding-bottom: 15px;
-}
-
-.links {
-  padding-top: 15px;
 }
 
 @media screen and (max-width: 1024px) {
