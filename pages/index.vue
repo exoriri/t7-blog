@@ -1,9 +1,8 @@
 <template>
   <div class="container">
     <div>
-      <Map 
-        :bind="geoJson"
-      />
+      <Map v-if="!loadingMessage" :data="geoJson" />
+      <div v-else>{{loadingMessage}}</div>
     </div>
   </div>
 </template>
@@ -11,19 +10,20 @@
 <script lang="ts">
 import Vue from "vue";
 
-import "leaflet/dist/leaflet.css";
-import L, { geoJSON } from "leaflet";
-
 import { getData } from "../api/requests";
 import { parseCSV } from "../core/utils";
-import * as constants from '../core/constants';
+import * as constants from "../core/constants";
+
+interface State {
+  loadingMessage: string;
+  geoJson: any;
+}
 
 export default {
-  data: function () {
+  data: function (): State {
     return {
-      isLoading: false,
-      loadingMessage: '',
-      geoJson: []
+      loadingMessage: "",
+      geoJson: [],
     };
   },
   head() {
@@ -34,27 +34,27 @@ export default {
     };
   },
   created() {
-    this.loadingMessage = 'Загружается данные по короне...'
+    this.loadPage()
+  },
 
-    const covidData = getData(`https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_daily_reports/02-25-2021.csv`);
-    const geoJson = getData(constants.geoJsonUrl);
+  methods: {
+    loadPage() {
+      this.loadingMessage = "Загружается данные по короне...";
 
-    covidData
-      .then(rwa => {
-        this.loadingMessage = '';
-      })
-      .catch(e => {
-        console.log('covid data loading error', e)
-      });
-
-    geoJson.then(response => {
-      this.geoJson = response;
-      console.log('asdf', this.geoJson)
-    })
-    .catch(e => {
-        console.log('covid data loading error', e)
-      });
-    
+      Promise.all([
+        getData(
+          `https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_daily_reports/02-25-2021.csv`
+        ),
+        getData(constants.geoJsonUrl),
+      ])
+        .then(([covidData, geoData]) => {
+          this.loadingMessage = '';
+          this.geoJson = geoData;
+        })
+        .catch((e) => {
+          console.log("Main fetch error", e);
+        });
+    },
   },
 };
 </script>

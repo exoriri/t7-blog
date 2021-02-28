@@ -1,79 +1,148 @@
 <template>
   <div>
-    <div id="mapid"></div>
+    <div id="map" class="map"></div>
+    <div id="info">&nbsp;</div>
   </div>
 </template>
 
 <script>
 import Vue from "vue";
-import L, { FeatureGroup } from "leaflet";
+
+import "ol/ol.css";
+
+import GeoJSON from "ol/format/GeoJSON";
+import Map from "ol/Map";
+import VectorLayer from "ol/layer/Vector";
+import VectorSource from "ol/source/Vector";
+import View from "ol/View";
+import { Fill, Stroke, Style, Text } from "ol/style";
+
+import * as constants from "../core/constants";
 
 export default Vue.extend({
-  props: ['data'],
+  props: ["data"],
   mounted() {
-    const map = L.map("mapid", {
-      attributionControl: false,
-    }).setView([37.8, -96], 1);
+    this.renderMap();
+  },
+  methods: {
+    renderMap() {
+      var style = new Style({
+        fill: new Fill({
+          color: "rgba(255, 255, 255, 0.6)",
+        }),
+        stroke: new Stroke({
+          color: "#319FD3",
+          width: 1,
+        }),
+        text: new Text({
+          font: "12px Calibri,sans-serif",
+          fill: new Fill({
+            color: "#000",
+          }),
+          stroke: new Stroke({
+            color: "#fff",
+            width: 3,
+          }),
+        }),
+      });
 
-    var southWest = map.unproject([0, 4096], map.getMaxZoom());
-    var northEast = map.unproject([4096, 0], map.getMaxZoom());
+      var vectorLayer = new VectorLayer({
+        source: new VectorSource({
+          url: constants.geoJsonUrl,
+          format: new GeoJSON(),
+        }),
+        style: function (feature) {
+          style.getText().setText(feature.get("name"));
+          return style;
+        },
+      });
 
-    var bounds = L.latLngBounds(southWest, northEast);
-    // console.log(this.data)
-    const tiles = L.tileLayer(
-      "https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token=" +
-        "pk.eyJ1IjoiZXhvcmlyaSIsImEiOiJja2xuZXVzN2UwaTl2MnBxcmFrNWxmeHRiIn0.ce2fdeg0LQPOGi1N26r5kw",
-      {
-        id: "mapbox/light-v9",
-        tileSize: 542,
-        maxZoom: 5,
-        minZoom: 2,
-        zoomOffset: -1,
-      }
-    ).addTo(map);
+      var map = new Map({
+        layers: [vectorLayer],
+        target: "map",
+        view: new View({
+          center: [0, 0],
+          zoom: 1,
+        }),
+      });
 
-    var myLines = [
-      {
-        type: "LineString",
-        coordinates: [
-          [-100, 40],
-          [-105, 45],
-          [-110, 55],
-        ],
-      },
-      {
-        type: "LineString",
-        coordinates: [
-          [-105, 40],
-          [-110, 45],
-          [-115, 55],
-        ],
-      },
-    ];
+      var highlightStyle = new Style({
+        stroke: new Stroke({
+          color: "#f00",
+          width: 1,
+        }),
+        fill: new Fill({
+          color: "rgba(255,0,0,0.1)",
+          cursor: "pointer"
+        }),
+        text: new Text({
+          font: "12px Calibri,sans-serif",
+          fill: new Fill({
+            color: "#000",
+          }),
+          stroke: new Stroke({
+            color: "#f00",
+            width: 3,
+          }),
+        }),
+      });
 
-    var geojsonFeature = {
-      type: "Feature",
-      properties: {
-        name: "Coors Field",
-        amenity: "Baseball Stadium",
-        popupContent: "This is where the Rockies play!",
-      },
-      geometry: {
-        type: "Point",
-        coordinates: [[-14.99404, 39.75621]],
-      },
-    };
+      var featureOverlay = new VectorLayer({
+        source: new VectorSource(),
+        map: map,
+        style: function (feature) {
+          highlightStyle.getText().setText(feature.get("name"));
+          return highlightStyle;
+        },
+      });
 
-    console.log(this.data)
-    L.geoJSON(this.data).addTo(map);
+      var highlight;
+      var displayFeatureInfo = function (pixel) {
+        var feature = map.forEachFeatureAtPixel(pixel, function (feature) {
+          return feature;
+        });
+        var info = document.getElementById("info");
+        if (feature) {
+          info.innerHTML = feature.getId() + ": " + feature.get("name");
+        } else {
+          info.innerHTML = "&nbsp;";
+        }
+
+        if (feature !== highlight) {
+          if (highlight) {
+            featureOverlay.getSource().removeFeature(highlight);
+          }
+          if (feature) {
+            featureOverlay.getSource().addFeature(feature);
+          }
+          highlight = feature;
+          if (highlight) {
+            console.log(highlight)
+            highlight.style.cursor = 'pointer';
+          }
+        }
+      };
+
+      map.on("pointermove", function (evt) {
+        const element = evt.map.getTargetElement();
+        if (evt.dragging) {
+          return;
+        }
+        var pixel = map.getEventPixel(evt.originalEvent);
+        displayFeatureInfo(pixel);
+      });
+
+      map.on("click", function (evt) {
+        displayFeatureInfo(evt.pixel);
+      });
+    },
   },
 });
 </script>
 
 <style scoped>
-#mapid {
-  height: 500px;
-  width: 100%;
-  min-width: 800px;
-}
+  .map {
+        width: 1200px;
+        height:500px;
+      }
 </style>
