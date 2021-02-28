@@ -1,7 +1,9 @@
 <template>
   <div class="container">
     <div>
-      <Map />
+      <Map 
+        :bind="geoJson"
+      />
     </div>
   </div>
 </template>
@@ -9,17 +11,19 @@
 <script lang="ts">
 import Vue from "vue";
 
+import "leaflet/dist/leaflet.css";
+import L, { geoJSON } from "leaflet";
+
 import { getData } from "../api/requests";
 import { parseCSV } from "../core/utils";
-
-import "leaflet/dist/leaflet.css";
-
-import L from "leaflet";
+import * as constants from '../core/constants';
 
 export default {
   data: function () {
     return {
-      covidCSV: "",
+      isLoading: false,
+      loadingMessage: '',
+      geoJson: []
     };
   },
   head() {
@@ -29,10 +33,28 @@ export default {
       ],
     };
   },
-  async mounted() {
-    const res = await getData(
-      `https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_daily_reports/02-25-2021.csv`
-    );
+  created() {
+    this.loadingMessage = 'Загружается данные по короне...'
+
+    const covidData = getData(`https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_daily_reports/02-25-2021.csv`);
+    const geoJson = getData(constants.geoJsonUrl);
+
+    covidData
+      .then(rwa => {
+        this.loadingMessage = '';
+      })
+      .catch(e => {
+        console.log('covid data loading error', e)
+      });
+
+    geoJson.then(response => {
+      this.geoJson = response;
+      console.log('asdf', this.geoJson)
+    })
+    .catch(e => {
+        console.log('covid data loading error', e)
+      });
+    
   },
 };
 </script>
